@@ -1,0 +1,122 @@
+root@d94f661eee8a:/# psql -U postgres
+psql (12.15 (Debian 12.15-1.pgdg120+1))
+Type "help" for help.
+
+##############インストール済み拡張モジュールの確認################
+
+postgres=# \dx
+                 List of installed extensions
+  Name   | Version |   Schema   |         Description
+---------+---------+------------+------------------------------
+ plpgsql | 1.0     | pg_catalog | PL/pgSQL procedural language
+(1 row)
+
+##############file_fdwモジュールのインストール##################
+
+postgres=# create extension file_fdw;
+CREATE EXTENSION
+postgres=# \dx
+                        List of installed extensions
+   Name   | Version |   Schema   |                Description
+----------+---------+------------+-------------------------------------------
+ file_fdw | 1.0     | public     | foreign-data wrapper for flat file access
+ plpgsql  | 1.0     | pg_catalog | PL/pgSQL procedural language
+(2 rows)
+
+###############外部サーバ定義##############################
+
+postgres=# create server csv_server foreign data wrapper file_fdw;
+CREATE SERVER
+
+##########################################################
+
+postgres=# create foreign table head1 (c1 int, c2 text, c3 text) server csv_server options (format 'csv', filename '/var/lib/postgresql/data/log/test.csv', delimiter ',');
+CREATE FOREIGN TABLE
+postgres=# select * from head1;
+ERROR:  invalid input syntax for type integer: "c1"
+CONTEXT:  COPY head1, line 1, column c1: "c1"
+postgres=# create foreign table head1 (c1 int, c2 text, c3 text) server csv_server options (format 'csv', filename '/var/lib/postgresql/data/log/test.csv', delimiter ',');
+ERROR:  relation "head1" already exists
+postgres=# drop foreign table head1
+postgres-# ;
+DROP FOREIGN TABLE
+postgres=# create foreign table head1 (c1 int, c2 text, c3 text) server csv_server options (format 'csv', filename '/var/lib/postgresql/data/log/test.csv', delimiter ',');
+CREATE FOREIGN TABLE
+postgres=# select * from head1;
+ERROR:  unterminated CSV quoted field
+CONTEXT:  COPY head1, line 3: "2,""hoge",""pos""
+"
+postgres=# drop foreign table head1
+;
+DROP FOREIGN TABLE
+
+########################csvファイルを外部テーブルとして参照#####################################
+
+postgres=# create foreign table head1 (c1 int, c2 text, c3 text) server csv_server options (format 'csv', filename '/var/lib/postgresql/data/log/test.csv', delimiter ',');
+CREATE FOREIGN TABLE
+postgres=# select * from head1;
+ c1 |    c2    |    c3
+----+----------+----------
+  1 | postgres | postgres
+  2 | hoge     | pos
+(2 rows)
+
+
+
+postgres=# \copy head1 to '/var/lib/postgresql/data/log/export.csv' with csv;
+ERROR:  cannot copy from foreign table "head1"
+HINT:  Try the COPY (SELECT ...) TO variant.
+postgres=# \copy (select * from head1;) to '/var/lib/postgresql/data/log/export.csv' with csv;
+ERROR:  syntax error at or near ";"
+LINE 1: COPY  ( select * from head1; ) TO STDOUT with csv;
+
+########################外部テーブルをcsvファイルへエクスポート#####################################
+                                   ^
+postgres=# \copy (select * from head1) to '/var/lib/postgresql/data/log/export.csv' with csv;
+COPY 2
+postgres=# create user testuser with password 'XXXXXXXXXXXXXX';
+CREATE ROLE
+postgres=# \du
+                                   List of roles
+ Role name |                         Attributes                         | Member of
+-----------+------------------------------------------------------------+-----------
+ postgres  | Superuser, Create role, Create DB, Replication, Bypass RLS | {}
+ testuser  |                                                            | {}
+
+postgres=# create user "testuser with password 'XXXXXXXXXXXXX';
+postgres"# \du
+postgres"# \du^C
+postgres=# ;
+postgres=# \du
+                                   List of roles
+ Role name |                         Attributes                         | Member of
+-----------+------------------------------------------------------------+-----------
+ postgres  | Superuser, Create role, Create DB, Replication, Bypass RLS | {}
+ testuser  |                                                            | {}
+
+######################ダブルクォートで囲まれたユーザの作成を試みる#####################################
+
+postgres=# create user "testuser2" with password 'XXXXXXXXXXXXXX';
+CREATE ROLE
+postgres=# \du
+                                   List of roles
+ Role name |                         Attributes                         | Member of
+-----------+------------------------------------------------------------+-----------
+ postgres  | Superuser, Create role, Create DB, Replication, Bypass RLS | {}
+ testuser  |                                                            | {}
+ testuser2 |                                                            | {}
+
+
+#######################外部テーブルとして参照したcsv(test.csv)とエクスポートしたcsv(export.csv)の内容####################
+
+postgres=# \! ls
+bin  boot  dev  docker-entrypoint-initdb.d  etc  home  lib  lib32  lib64  libx32  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
+postgres=# \! cat /var/lib/postgresql/data/log/test.csv
+1,"postgres","postgres"
+2,"hoge","pos"
+postgres=# \! cat /var/lib/postgresql/data/log/export.csv
+1,postgres,postgres
+2,hoge,pos
+postgres=#
+
+############################################################################################################
