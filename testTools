@@ -1,0 +1,48 @@
+ツール		ベース	言語	所感
+testinfra	pytest	python	pythonなんで学習コストが低いかもしれない。
+
+				testinfra
+				https://testinfra.readthedocs.io/en/latest/
+
+				リリースサイクルは年2~3回くらい。まあまあ。
+
+				ansible moleculeというansible role用テストツールのデフォルトテストツールだった。
+				今はデフォルトじゃないが、選択は可能。親和性はありそう。
+
+				ansible molecule
+				https://ansible.readthedocs.io/projects/molecule/
+
+				ちなみにmoleculeの現状のデフォルトテストツールはansible。
+				テスト用moduleがあるわけではなく、OSコマンドを直打ちして標準出力と
+				期待値を比較するtaskを書くみたい。ansibleをテストツールとして使うのは厳しい印象。
+
+				windows対応しているっぽいが未確認。
+
+serverspec	rspec	ruby	モジュールはtestinfraより少し多め。
+
+				serverspec
+				https://serverspec.org/changes-of-v2.html
+
+				2024年はリリースなし。それまでは年2回くらいリリースしてた。下火。。。？
+
+				ansible_specでansibleと統合できる。
+
+				ansible_spec
+				https://github.com/volanja/ansible_spec
+				ansible_specの最新リリースは2021年。。。
+
+				windowsモジュールもあり。詳細は未確認。
+
+ansible		ansible	python	ansible-playbook --checkオプションをつけることで変更の有無が分かる。
+				変更あり=差分ありなので、テストツールとして利用することは一応可能。
+				変更の詳細が分からないので、実用は厳しい印象。
+				ex)ファイルのパーミッションとownerが変わってても、"changed"としか表示されない。
+
+
+
+chef_inspec	chef?	?	テストモジュールは一番多い。でも有償。
+
+
+
+個人的にはtestinfra。pythonなんで書きやすい。
+ここ5年くらい、インフラテストツールは話題になっていない。
